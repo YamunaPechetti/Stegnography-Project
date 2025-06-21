@@ -15,16 +15,17 @@ A Python GUI tool that allows embedding and extracting hidden text/data inside i
 - Supports file saving and preview
 
 ## Installation
-
 ```bash
 git clone https://github.com/YamunaPechetti/steganography-tool.git
 cd steganography-tool
 pip install -r requirements.txt
 ```
 ## Usage
-```bash
-python main.py
-```
+- Select an image (.png or .bmp)
+- Type your secret message
+- Click Hide Message → Save new image
+- To extract → Load stego-image → Click Show Message
+
 ## Supported Formats
 - PNG
 - BMP
