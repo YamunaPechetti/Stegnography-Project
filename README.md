@@ -16,7 +16,7 @@ A Python GUI tool that allows embedding and extracting hidden text/data inside i
 
 ## Installation
 ```bash
-git clone https://github.com/YamunaPechetti/steganography-tool.git
+git clone https://github.com/YamunaPechetti/Steganography-Project.git
 cd steganography-tool
 pip install -r requirements.txt
 ```
