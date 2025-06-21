@@ -1,42 +1,62 @@
-from interface import start_app
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from PIL import Image
 
-if __name__ == '__main__':
-    start_app()
-
-# config.py
 SUPPORTED_FORMATS = [".png", ".bmp"]
 SECRET_END = "<<<END>>>"
 
-# embedder.py
-from PIL import Image
-import stepic
-import config
+def text_to_bits(text):
+    return ''.join(f'{ord(c):08b}' for c in text)
+
+def bits_to_text(bits):
+    chars = [bits[i:i+8] for i in range(0, len(bits), 8)]
+    return ''.join(chr(int(b, 2)) for b in chars)
 
 def hide_message(image_path, message, output_path):
     img = Image.open(image_path)
-    message += config.SECRET_END
-    new_img = stepic.encode(img, message.encode())
-    new_img.save(output_path)
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
 
-# extractor.py
-from PIL import Image
-import stepic
-import config
+    message += SECRET_END
+    binary = text_to_bits(message)
+    pixels = list(img.getdata())
+
+    if len(binary) > len(pixels) * 3:
+        raise ValueError("Message is too long for this image.")
+
+    new_pixels = []
+    bit_idx = 0
+
+    for pixel in pixels:
+        r, g, b = pixel
+        if bit_idx < len(binary):
+            r = (r & ~1) | int(binary[bit_idx])
+            bit_idx += 1
+        if bit_idx < len(binary):
+            g = (g & ~1) | int(binary[bit_idx])
+            bit_idx += 1
+        if bit_idx < len(binary):
+            b = (b & ~1) | int(binary[bit_idx])
+            bit_idx += 1
+        new_pixels.append((r, g, b))
+
+    img.putdata(new_pixels)
+    img.save(output_path)
 
 def show_message(image_path):
     img = Image.open(image_path)
-    message = stepic.decode(img).decode()
-    return message.split(config.SECRET_END)[0]
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
 
-# utils.py
-def is_valid_file(filename):
-    return filename.lower().endswith((".png", ".bmp"))
+    pixels = list(img.getdata())
+    bits = ''
 
-# interface.py
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from embedder import hide_message
-from extractor import show_message
+    for pixel in pixels:
+        for channel in pixel:
+            bits += str(channel & 1)
+
+    message = bits_to_text(bits)
+    return message.split(SECRET_END)[0]
 
 def start_app():
     def pick_image():
@@ -52,8 +72,11 @@ def start_app():
             return
         out = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG", "*.png")])
         if out:
-            hide_message(path, msg, out)
-            messagebox.showinfo("Done", "Message hidden and saved.")
+            try:
+                hide_message(path, msg, out)
+                messagebox.showinfo("Done", "Message hidden and saved.")
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
 
     def extract():
         path = img_path.get()
@@ -86,3 +109,6 @@ def start_app():
     tk.Button(win, text="Show Message", command=extract).pack(pady=5)
 
     win.mainloop()
+
+if __name__ == '__main__':
+    start_app()
